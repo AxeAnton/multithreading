@@ -1,0 +1,164 @@
+<html>
+<head>
+<title>TaskExecutor.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #ed864a;}
+.s1 { color: #ebebeb;}
+.s2 { color: #ed864a; font-weight: bold;}
+.s3 { color: #7ec3e6;}
+.s4 { color: #33ccff; font-weight: bold;}
+.s5 { color: #54b33e;}
+.ln { color: #999999; font-weight: normal; font-style: normal; }
+</style>
+</head>
+<body bgcolor="#131314">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+TaskExecutor.java</font>
+</center></td></tr></table>
+<pre><a name="l1"><span class="ln">1    </span></a><span class="s0">package </span><span class="s1">ru.ifmo.lessons.lesson26</span><span class="s2">;</span>
+<a name="l2"><span class="ln">2    </span></a>
+<a name="l3"><span class="ln">3    </span></a><span class="s0">import </span><span class="s1">com.sun.source.tree.CaseTree</span><span class="s2">;</span>
+<a name="l4"><span class="ln">4    </span></a>
+<a name="l5"><span class="ln">5    </span></a><span class="s0">import </span><span class="s1">java.util.List</span><span class="s2">;</span>
+<a name="l6"><span class="ln">6    </span></a><span class="s0">import </span><span class="s1">java.util.concurrent.*</span><span class="s2">; </span><span class="s3">// 2. Все что связано с пулами потоков находится вот в этом пакете.</span>
+<a name="l7"><span class="ln">7    </span></a>
+<a name="l8"><span class="ln">8    </span></a><span class="s0">public class </span><span class="s1">TaskExecutor {</span>
+<a name="l9"><span class="ln">9    </span></a>    <span class="s0">public static void </span><span class="s1">main(String[] args) {</span>
+<a name="l10"><span class="ln">10   </span></a>        <span class="s3">// 1. Пул потоков - реализация порождающего паттерна проектирования - &quot;объектный пул&quot;</span>
+<a name="l11"><span class="ln">11   </span></a>        <span class="s3">// 1. Пул потоков [thread1, thread2, thread3,] это некоторое хранилище где уже созданные экземпляры класса thread, ждут когда к ним обратяться.</span>
+<a name="l12"><span class="ln">12   </span></a>        <span class="s3">// 1. Очередь с задачами [task1, task2, task3, task4]</span>
+<a name="l13"><span class="ln">13   </span></a>        <span class="s3">// 1. ервый поток выполняют задачу №1, второй 2, третий 3, когда один из потоков закончил он берет задачу 4.</span>
+<a name="l14"><span class="ln">14   </span></a>        <span class="s3">// 1. Пул потоков, можно реализовать самостоятельно или воспользоваться готовым пулом потоков</span>
+<a name="l15"><span class="ln">15   </span></a>        <span class="s3">// 1. Пул можно создать самостоятельно:</span>
+<a name="l16"><span class="ln">16   </span></a>        <span class="s3">// 1.1. фиксированного размера, количество потоков указывается при создании.</span>
+<a name="l17"><span class="ln">17   </span></a>        <span class="s3">// 1.2. Гибкий пул, когда размер будет колебаться от мин.(изначальное) до макс. Ex. min 2 max 8.</span>
+<a name="l18"><span class="ln">18   </span></a>        <span class="s3">// 1.3. Пул для выполнения задач с указанным интервалом.</span>
+<a name="l19"><span class="ln">19   </span></a>        <span class="s3">// 1.4. можно расшить (наследоваться- extend) существующий класс (пул потоков) для более гибкой настройки.</span>
+<a name="l20"><span class="ln">20   </span></a>        <span class="s3">// 1.5. можно имплементировать интерфейс пула потоков, для полностью своей реализации. Используется редко.</span>
+<a name="l21"><span class="ln">21   </span></a>        <span class="s3">// 1. Если задачи очень разные, то лучше сделать несколько пулов ex. одна задача, сложение, вторая передача в файл, третья еще что то, вообщем лучше иметь один пул под однотипные задачи.</span>
+<a name="l22"><span class="ln">22   </span></a>        <span class="s3">// 1. NB Проблема пула потоков: Допустим в пуле два потока, первая задача получает задачи от пользователя, тогда первый поток ждет ввода данных, вторая задача бесконечный цикл, тогда второй поток все время занят, таким образом задачи 3, 4, 5 не будут выполены.</span>
+<a name="l23"><span class="ln">23   </span></a>        <span class="s3">// 1. NB Решение: НЕ передам в пул потоков бесконечный цикл, надо использовать отдельный цикл. И все взоимодействие с клиентом это то же не про пул потоков.</span>
+<a name="l24"><span class="ln">24   </span></a>        <span class="s3">// 1. NB Перерасход ресурсов, происходит если размер потока очень большой (мало задач), мы ошиблись!</span>
+<a name="l25"><span class="ln">25   </span></a>        <span class="s3">// 1. Еще одна проблема, при СОБСТВЕННОЙ реализации это утечка потока, поток берет задачу и уходит ее выполнять, второй поток так же занят задачей 2, при неправильной реализации может так случится, что поток 1 после выполнения задачи, физически не возвращается в пул и через какое то время пул опустеет.</span>
+<a name="l26"><span class="ln">26   </span></a>
+<a name="l27"><span class="ln">27   </span></a>        <span class="s1">ExecutorService fixedPool = Executors.newFixedThreadPool(</span><span class="s4">2</span><span class="s1">)</span><span class="s2">;</span>
+<a name="l28"><span class="ln">28   </span></a>        <span class="s3">// 3. Потоки которые НЕ по расписанию ТД может быть ExecutorService, это интерфейс. Далее прописываем класс Executors, там много всяких статических методов которыми можно воспользоваться, выбираем метод newFixedThreadPool(2), в аргументе указываем количество потоков (пока фиксированное). Затем можем передовать пул ЗАДАЧ.</span>
+<a name="l29"><span class="ln">29   </span></a>                <span class="s0">for </span><span class="s1">(</span><span class="s0">int </span><span class="s1">i = </span><span class="s4">0</span><span class="s2">; </span><span class="s1">i &lt; </span><span class="s4">7</span><span class="s2">; </span><span class="s1">i++) { </span><span class="s3">// 4. можно передать задачи в цикле</span>
+<a name="l30"><span class="ln">30   </span></a>            <span class="s0">int </span><span class="s1">iValue = i</span><span class="s2">;</span>
+<a name="l31"><span class="ln">31   </span></a>
+<a name="l32"><span class="ln">32   </span></a>            <span class="s1">fixedPool.execute(() -&gt; { </span><span class="s3">// 5. у ФИКСИРОВАННОГО пула потоков вызываем метод execute и в него передаются инструкции(задачи).</span>
+<a name="l33"><span class="ln">33   </span></a>                <span class="s3">// 6. Метод execute передает задачу в очередь, она попадает на исполнение в порядке своей очереди, а не нимедленно.</span>
+<a name="l34"><span class="ln">34   </span></a>                <span class="s1">System.out.println(</span><span class="s5">&quot;Выполнение задачи №&quot; </span><span class="s1">+ iValue)</span><span class="s2">;</span>
+<a name="l35"><span class="ln">35   </span></a>            <span class="s1">})</span><span class="s2">;</span>
+<a name="l36"><span class="ln">36   </span></a>        <span class="s1">}</span>
+<a name="l37"><span class="ln">37   </span></a>        <span class="s3">// 7. вариант без цикла.</span>
+<a name="l38"><span class="ln">38   </span></a>        <span class="s1">fixedPool.execute(() -&gt; {</span>
+<a name="l39"><span class="ln">39   </span></a>            <span class="s1">System.out.println(</span><span class="s5">&quot;Выполнение задачи № 1&quot;</span><span class="s1">)</span><span class="s2">;</span>
+<a name="l40"><span class="ln">40   </span></a>        <span class="s1">})</span><span class="s2">;</span>
+<a name="l41"><span class="ln">41   </span></a>        <span class="s1">fixedPool.execute(() -&gt; {</span>
+<a name="l42"><span class="ln">42   </span></a>            <span class="s1">System.out.println(</span><span class="s5">&quot;Выполнение задачи № 2&quot;</span><span class="s1">)</span><span class="s2">;</span>
+<a name="l43"><span class="ln">43   </span></a>        <span class="s1">})</span><span class="s2">;</span>
+<a name="l44"><span class="ln">44   </span></a>        <span class="s1">fixedPool.execute(() -&gt; {</span>
+<a name="l45"><span class="ln">45   </span></a>            <span class="s1">System.out.println(</span><span class="s5">&quot;Выполнение задачи № 3&quot;</span><span class="s1">)</span><span class="s2">;</span>
+<a name="l46"><span class="ln">46   </span></a>        <span class="s1">})</span><span class="s2">;</span>
+<a name="l47"><span class="ln">47   </span></a>        <span class="s1">fixedPool.execute(() -&gt; {</span>
+<a name="l48"><span class="ln">48   </span></a>            <span class="s1">System.out.println(</span><span class="s5">&quot;Выполнение задачи № 4&quot;</span><span class="s1">)</span><span class="s2">;</span>
+<a name="l49"><span class="ln">49   </span></a>        <span class="s1">})</span><span class="s2">;</span>
+<a name="l50"><span class="ln">50   </span></a>        <span class="s1">fixedPool.execute(() -&gt; {</span>
+<a name="l51"><span class="ln">51   </span></a>            <span class="s1">System.out.println(</span><span class="s5">&quot;Выполнение задачи №5 &quot;</span><span class="s1">)</span><span class="s2">;</span>
+<a name="l52"><span class="ln">52   </span></a>        <span class="s1">})</span><span class="s2">;</span>
+<a name="l53"><span class="ln">53   </span></a>        <span class="s3">// 9. Первый вариант.</span>
+<a name="l54"><span class="ln">54   </span></a>        <span class="s1">fixedPool.shutdown()</span><span class="s2">; </span><span class="s3">// 8. метод завершает задачи и не принимает новые и к пулу нельзя обращаться повторно (он закрыт). Нельзя вызвать fixedPool.execute(() -&gt; {System.out.pr и т.д.</span>
+<a name="l55"><span class="ln">55   </span></a>        <span class="s3">//10. без остановке через .shutdown(), пул потоков будет ждать новых задач.</span>
+<a name="l56"><span class="ln">56   </span></a>
+<a name="l57"><span class="ln">57   </span></a>        <span class="s3">// 11. второй ВАРИАНТ:</span>
+<a name="l58"><span class="ln">58   </span></a>        <span class="s1">List&lt;Runnable&gt; runeables = fixedPool.shutdownNow()</span><span class="s2">; </span><span class="s3">// 11. fixedPool.shutdownNow() - завершает текущие задачи в очереди и не принимает новые к пулу нельзя обратиться повторно. То есть мы получим список не выполненых задач - List&lt;Runnable&gt; runeables</span>
+<a name="l59"><span class="ln">59   </span></a>        <span class="s1">System.out.println(runeables)</span><span class="s2">;</span>
+<a name="l60"><span class="ln">60   </span></a>
+<a name="l61"><span class="ln">61   </span></a>        <span class="s3">// 12. Второй способ создания пула потоков на один поток. Поток, который с одним потоком, который выполняет небольшие задачки</span>
+<a name="l62"><span class="ln">62   </span></a>        <span class="s1">ExecutorService singlePool = Executors.newSingleThreadExecutor()</span><span class="s2">; </span><span class="s3">//Создается вот так.</span>
+<a name="l63"><span class="ln">63   </span></a>
+<a name="l64"><span class="ln">64   </span></a>        <span class="s3">// 13. задачи.</span>
+<a name="l65"><span class="ln">65   </span></a>        <span class="s1">singlePool.execute(() -&gt; {</span>
+<a name="l66"><span class="ln">66   </span></a>            <span class="s1">System.out.println(</span><span class="s5">&quot;Task 1&quot;</span><span class="s1">)</span><span class="s2">;</span>
+<a name="l67"><span class="ln">67   </span></a>        <span class="s1">})</span><span class="s2">;</span>
+<a name="l68"><span class="ln">68   </span></a>        <span class="s1">singlePool.execute(() -&gt; {</span>
+<a name="l69"><span class="ln">69   </span></a>            <span class="s1">System.out.println(</span><span class="s5">&quot;Task 2&quot;</span><span class="s1">)</span><span class="s2">;</span>
+<a name="l70"><span class="ln">70   </span></a>        <span class="s1">})</span><span class="s2">;</span>
+<a name="l71"><span class="ln">71   </span></a>
+<a name="l72"><span class="ln">72   </span></a>        <span class="s3">//14. NB. Если в задачах имеется БЕСКОНЕЧНЫЙ ЦИКЛ, то singlePool.shutdown() - без NOW!!! НЕ завершит бесконечную задачу</span>
+<a name="l73"><span class="ln">73   </span></a>        <span class="s1">singlePool.shutdownNow()</span><span class="s2">; </span><span class="s3">//14. а метод shutdownNow() СКОРЕЕ ВСЕГО не завершит бесконечную задачу</span>
+<a name="l74"><span class="ln">74   </span></a>
+<a name="l75"><span class="ln">75   </span></a>        <span class="s3">//15. NB Все планировщики НЕ связанные со временем это просто ExecutorsService</span>
+<a name="l76"><span class="ln">76   </span></a>        <span class="s3">//16. NB Планировщики связанные со временем используют данный интерфейс ScheduledExecutorService</span>
+<a name="l77"><span class="ln">77   </span></a>        <span class="s1">ScheduledExecutorService everySevenSecond = Executors.newSingleThreadScheduledExecutor()</span><span class="s2">;</span>
+<a name="l78"><span class="ln">78   </span></a>        <span class="s3">//17. В пуле будет один поток который будет выполнять задачи по расписанию.</span>
+<a name="l79"><span class="ln">79   </span></a>
+<a name="l80"><span class="ln">80   </span></a>
+<a name="l81"><span class="ln">81   </span></a>        <span class="s1">everySevenSecond.scheduleAtFixedRate(() -&gt; {</span>
+<a name="l82"><span class="ln">82   </span></a>                    <span class="s1">System.out.println(</span><span class="s5">&quot;scheduleFixedRate task&quot;</span><span class="s1">)</span><span class="s2">; </span><span class="s3">// Runnable command - задача которая должна выполняться</span>
+<a name="l83"><span class="ln">83   </span></a>                <span class="s1">}</span><span class="s2">,</span>
+<a name="l84"><span class="ln">84   </span></a>            <span class="s4">0</span><span class="s2">,          </span><span class="s3">// 18. первоначальное время ожидания перед началом выполнения</span>
+<a name="l85"><span class="ln">85   </span></a>                <span class="s4">7</span><span class="s2">,               </span><span class="s3">// 19. long initialDelay - задача запускается на выполнение каждые 7</span>
+<a name="l86"><span class="ln">86   </span></a>                <span class="s1">TimeUnit.SECONDS </span><span class="s3">// 20. каждые сек/мили/часы/дни (короче это раз в .....)</span>
+<a name="l87"><span class="ln">87   </span></a>                <span class="s3">// 21. NB Важный момент, метод не берет в расчет время выполнения задачи, то есть не важно выполнена ли задача, запуск повторится через 7мь сек и будет происходить переполение или поток не справится с задачей, что бы это избежать, необходимо учитывать время выполнения задачи.</span>
+<a name="l88"><span class="ln">88   </span></a>
+<a name="l89"><span class="ln">89   </span></a>        <span class="s1">)</span><span class="s2">;</span>
+<a name="l90"><span class="ln">90   </span></a>        <span class="s1">ScheduledExecutorService everyThreeSecond = Executors.newSingleThreadScheduledExecutor()</span><span class="s2">;</span>
+<a name="l91"><span class="ln">91   </span></a>        <span class="s1">everyThreeSecond.scheduleWithFixedDelay( </span><span class="s3">//22. метод берет в расчет время выполнения задач, аргументы аналогичные</span>
+<a name="l92"><span class="ln">92   </span></a>                <span class="s1">() -&gt; {</span>
+<a name="l93"><span class="ln">93   </span></a>                    <span class="s0">try </span><span class="s1">{</span>
+<a name="l94"><span class="ln">94   </span></a>                        <span class="s1">Thread.sleep(</span><span class="s4">5000</span><span class="s1">)</span><span class="s2">;</span>
+<a name="l95"><span class="ln">95   </span></a>                        <span class="s1">System.out.println(</span><span class="s5">&quot;scheduleWithFixedDelay task&quot;</span><span class="s1">)</span><span class="s2">;</span>
+<a name="l96"><span class="ln">96   </span></a>                    <span class="s1">} </span><span class="s0">catch </span><span class="s1">(InterruptedException e) {</span>
+<a name="l97"><span class="ln">97   </span></a>                        <span class="s1">e.printStackTrace()</span><span class="s2">;</span>
+<a name="l98"><span class="ln">98   </span></a>                    <span class="s1">}</span>
+<a name="l99"><span class="ln">99   </span></a>                <span class="s1">}</span><span class="s2">,</span>
+<a name="l100"><span class="ln">100  </span></a>
+<a name="l101"><span class="ln">101  </span></a>                <span class="s4">0</span><span class="s2">,               </span><span class="s3">// 23. первоначальное время ожидания перед началом выполнения</span>
+<a name="l102"><span class="ln">102  </span></a>                <span class="s4">3</span><span class="s2">,                        </span><span class="s3">// 24. NB long delay - задача запускается на выполнение каждые 3, после завершения предыдущей!</span>
+<a name="l103"><span class="ln">103  </span></a>                <span class="s1">TimeUnit.SECONDS</span>
+<a name="l104"><span class="ln">104  </span></a>        <span class="s1">)</span><span class="s2">;</span>
+<a name="l105"><span class="ln">105  </span></a>        <span class="s3">// 25. можно завершить вызовом метода shutdown</span>
+<a name="l106"><span class="ln">106  </span></a>
+<a name="l107"><span class="ln">107  </span></a>        <span class="s1">ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor()</span><span class="s2">;</span>
+<a name="l108"><span class="ln">108  </span></a>        <span class="s1">scheduledExecutor.schedule(</span>
+<a name="l109"><span class="ln">109  </span></a>                <span class="s1">() -&gt; { </span><span class="s3">// 26. Runnable command - задача, которая выполняется</span>
+<a name="l110"><span class="ln">110  </span></a>                    <span class="s1">System.out.println(</span><span class="s5">&quot;scheduledExecutor task&quot;</span><span class="s1">)</span><span class="s2">;</span>
+<a name="l111"><span class="ln">111  </span></a>                <span class="s1">}</span><span class="s2">,</span>
+<a name="l112"><span class="ln">112  </span></a>                <span class="s4">10</span><span class="s2">, </span><span class="s3">// 27. long delay - время ОЖИДАНИЯ перед началом выполнения задачи (отложенное выполнение)</span>
+<a name="l113"><span class="ln">113  </span></a>                <span class="s1">TimeUnit.SECONDS</span>
+<a name="l114"><span class="ln">114  </span></a>
+<a name="l115"><span class="ln">115  </span></a>        <span class="s1">)</span><span class="s2">;</span>
+<a name="l116"><span class="ln">116  </span></a>        <span class="s1">scheduledExecutor.shutdown()</span><span class="s2">;</span>
+<a name="l117"><span class="ln">117  </span></a><span class="s3">//42.</span>
+<a name="l118"><span class="ln">118  </span></a>        <span class="s3">/* 2- изначальное количество потоков*/</span>
+<a name="l119"><span class="ln">119  </span></a>        <span class="s3">/* 7 - макс количество потоков*/</span>
+<a name="l120"><span class="ln">120  </span></a>        <span class="s1">ExecutorService lessonPool = </span><span class="s0">new </span><span class="s1">LessonExecutor(</span>
+<a name="l121"><span class="ln">121  </span></a>                <span class="s4">2</span><span class="s2">,</span>
+<a name="l122"><span class="ln">122  </span></a>                <span class="s4">7</span><span class="s2">,</span>
+<a name="l123"><span class="ln">123  </span></a>                <span class="s4">20</span><span class="s2">, </span><span class="s1">TimeUnit.SECONDS</span><span class="s2">, </span><span class="s3">/*поток ждет без задач, если задача не появилась поток удаляется из пула*/</span>
+<a name="l124"><span class="ln">124  </span></a>                <span class="s0">new </span><span class="s1">LinkedBlockingQueue&lt;&gt;())</span><span class="s2">; </span><span class="s3">// 43. Блокирующая Очередь фиксированного или нет размера, можно передать все, что угодно, например, что Array не принемает больше 20 задач на вход.</span>
+<a name="l125"><span class="ln">125  </span></a>        <span class="s1">lessonPool.execute(() -&gt; {</span>
+<a name="l126"><span class="ln">126  </span></a>            <span class="s0">try </span><span class="s1">{</span>
+<a name="l127"><span class="ln">127  </span></a>                <span class="s1">Thread.sleep(</span><span class="s4">200</span><span class="s1">)</span><span class="s2">;</span>
+<a name="l128"><span class="ln">128  </span></a>                <span class="s1">System.out.println(</span><span class="s5">&quot;lessonPool 1&quot;</span><span class="s1">)</span><span class="s2">; </span><span class="s3">//44. задача</span>
+<a name="l129"><span class="ln">129  </span></a>            <span class="s1">} </span><span class="s0">catch </span><span class="s1">(InterruptedException e) {</span>
+<a name="l130"><span class="ln">130  </span></a>                <span class="s1">e.printStackTrace()</span><span class="s2">;</span>
+<a name="l131"><span class="ln">131  </span></a>            <span class="s1">}</span>
+<a name="l132"><span class="ln">132  </span></a>        <span class="s1">})</span><span class="s2">;</span>
+<a name="l133"><span class="ln">133  </span></a>        <span class="s1">lessonPool.execute(() -&gt; {</span>
+<a name="l134"><span class="ln">134  </span></a>            <span class="s1">System.out.println(</span><span class="s5">&quot;lessonPool 2&quot;</span><span class="s1">)</span><span class="s2">;</span>
+<a name="l135"><span class="ln">135  </span></a>        <span class="s1">})</span><span class="s2">;</span>
+<a name="l136"><span class="ln">136  </span></a>        <span class="s1">lessonPool.shutdown()</span><span class="s2">;</span>
+<a name="l137"><span class="ln">137  </span></a>        <span class="s3">//45. и завершаем shutdown(), что бы заверить программу и он не продолжал ждать задач.</span>
+<a name="l138"><span class="ln">138  </span></a>
+<a name="l139"><span class="ln">139  </span></a>
+<a name="l140"><span class="ln">140  </span></a>    <span class="s1">}</span>
+<a name="l141"><span class="ln">141  </span></a><span class="s1">}</span>
+<a name="l142"><span class="ln">142  </span></a></pre>
+</body>
+</html>

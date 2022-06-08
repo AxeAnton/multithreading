@@ -1,0 +1,89 @@
+<html>
+<head>
+<title>SemaphoreExample.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #ed864a;}
+.s1 { color: #ebebeb;}
+.s2 { color: #ed864a; font-weight: bold;}
+.s3 { color: #7ec3e6;}
+.s4 { color: #33ccff; font-weight: bold;}
+.s5 { color: #54b33e;}
+.ls0 { height: 1px; border-width: 0; color: #cccccc; background-color:#cccccc}
+.ln { color: #999999; font-weight: normal; font-style: normal; }
+</style>
+</head>
+<body bgcolor="#131314">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+SemaphoreExample.java</font>
+</center></td></tr></table>
+<pre><a name="l1"><span class="ln">1    </span></a><span class="s0">package </span><span class="s1">ru.ifmo.lessons.lesson27</span><span class="s2">;</span>
+<a name="l2"><span class="ln">2    </span></a>
+<a name="l3"><span class="ln">3    </span></a><span class="s0">import </span><span class="s1">java.util.HashSet</span><span class="s2">;</span>
+<a name="l4"><span class="ln">4    </span></a><span class="s0">import </span><span class="s1">java.util.concurrent.Semaphore</span><span class="s2">;</span>
+<a name="l5"><span class="ln">5    </span></a>
+<a name="l6"><span class="ln">6    </span></a><span class="s0">public class </span><span class="s1">SemaphoreExample { </span><span class="s3">// 8. Один из вариантов блокировки ресурса - пока поток занят</span>
+<a name="l7"><span class="ln">7    </span></a>    <span class="s0">private volatile boolean </span><span class="s1">prop</span><span class="s2">; </span><span class="s3">// 20. При наличии модификатора volatile (стандартное средство работы с многопоточностью) - потоки не кэшируют свойство, а обращаются к общей памяти =&gt; 21.</span><hr class="ls0"><a name="l8"><span class="ln">8    </span></a>    <span class="s3">// 21. Пример: каждый поток получил ссылку на переменную и каждый поток сохранил значение данной переменной false. Получается, что каждый поток считает, что значение свойств false, допустим если один из потоков поменял свойство переменной на true, но другие потоки не знают об этом, что свойство поменялось на true и они будут считать, что свойство prop = false, следовательно, такая ситуация будет приводить к ошибкам. Если мы добавим этот модификатор volatile, то потоки НЕ будут КЕШИРОВАТЬ свойства, а все время будут обращаться к свойствам переменной.</span>
+<a name="l9"><span class="ln">9    </span></a>    <span class="s3">/* 
+<a name="l10"><span class="ln">10   </span></a>    * поток: 1 prop - false 
+<a name="l11"><span class="ln">11   </span></a>    * 
+<a name="l12"><span class="ln">12   </span></a>    * поток: 2 prop - false 
+<a name="l13"><span class="ln">13   </span></a>    * 
+<a name="l14"><span class="ln">14   </span></a>    * поток: 3 prop - false 
+<a name="l15"><span class="ln">15   </span></a>    * 
+<a name="l16"><span class="ln">16   </span></a>    * */</span>
+<a name="l17"><span class="ln">17   </span></a>  <span class="s3">/*  22. Что нужно знать об многопоточности: 
+<a name="l18"><span class="ln">18   </span></a>        a. Что такое многопоточность? 
+<a name="l19"><span class="ln">19   </span></a>        b. Как ведут себя многопоточные приложения? 
+<a name="l20"><span class="ln">20   </span></a>        c. Что такое дополнительные потоки? 
+<a name="l21"><span class="ln">21   </span></a>        d. Что такое фоновые потоки? 
+<a name="l22"><span class="ln">22   </span></a>        e. Какие есть варианты создания потока? 
+<a name="l23"><span class="ln">23   </span></a>        f. Какие есть варианты описания инструкций для потока? 
+<a name="l24"><span class="ln">24   </span></a>        g. Какие у потока стадии жизненного цикла? (поток создан, поток передан планировщику (надо знать что именно планировщик управляет потоками) и т.д.) 
+<a name="l25"><span class="ln">25   </span></a>        h. 100% надо знать про блок и метод synchronized, и в чем там может быть ошибка (что блок добавляется слишком много инструкций не связанных с блокировкой ресурса) и что приоритета в очереди НЕТ. 
+<a name="l26"><span class="ln">26   </span></a>        l. В теории надо знать про методы wait(преостанавлевает работу потока на указанное количество милисекунд и что при вызове метода wait поток может проснуться в любой момент), notify (не будит конкретные потоки), notifyAll, 
+<a name="l27"><span class="ln">27   </span></a>        m. Про sleep 
+<a name="l28"><span class="ln">28   </span></a>        n. Про способы прерывания потока, когда поток будит остановлен или прерван методом interrupt 
+<a name="l29"><span class="ln">29   </span></a>        o. В каких случаях выбрасывается InterruptedException 
+<a name="l30"><span class="ln">30   </span></a>        p. И дополнительно многопоточные коллекции, блокирующие очереди и пулы потоков 
+<a name="l31"><span class="ln">31   </span></a>*/</span>
+<a name="l32"><span class="ln">32   </span></a>    <span class="s0">public static void </span><span class="s1">main(String[] args) {</span>
+<a name="l33"><span class="ln">33   </span></a>        <span class="s3">/* Для управления доступом к ресурсу семафор использует счетчик, представляющий количество разрешений. 
+<a name="l34"><span class="ln">34   </span></a>           Если значение счетчика больше нуля, то поток получает доступ к ресурсу, при этом счетчик уменьшается на 
+<a name="l35"><span class="ln">35   </span></a>           единицу. После окончания работы с ресурсом поток освобождает семафор, и счетчик увеличивается на единицу. Если же 
+<a name="l36"><span class="ln">36   </span></a>           счетчик равен нулю, то поток блокируется и ждет, пока не получит разрешение от семафора.*/</span>
+<a name="l37"><span class="ln">37   </span></a>
+<a name="l38"><span class="ln">38   </span></a>        <span class="s3">// Semaphore(int permits)</span>
+<a name="l39"><span class="ln">39   </span></a>        <span class="s3">// Semaphore(int permits, boolean fair)</span>
+<a name="l40"><span class="ln">40   </span></a>        <span class="s3">// void acquire() throws InterruptedException</span>
+<a name="l41"><span class="ln">41   </span></a>        <span class="s3">// void acquire(int permits) throws InterruptedВxception</span>
+<a name="l42"><span class="ln">42   </span></a>        <span class="s3">// void release()</span>
+<a name="l43"><span class="ln">43   </span></a>        <span class="s3">// void release(int permits)</span>
+<a name="l44"><span class="ln">44   </span></a>
+<a name="l45"><span class="ln">45   </span></a>        <span class="s1">Semaphore sem = </span><span class="s0">new </span><span class="s1">Semaphore(</span><span class="s4">1</span><span class="s2">, </span><span class="s0">true</span><span class="s1">)</span><span class="s2">; </span><span class="s3">// 13. Смысл такой, есть какой то Semaphore(симофор), который содержит число (количество разрешений, у нас 1), ссылка (sem) на этот симофор должна быть у всех потоков, тогда перед тем =&gt; 14</span>
+<a name="l46"><span class="ln">46   </span></a>        <span class="s1">HashSet&lt;String&gt; commonSet = </span><span class="s0">new </span><span class="s1">HashSet&lt;&gt;()</span><span class="s2">; </span><span class="s3">// 9. Ресурс. 12. Можно было бы поступить и иначе, например: вместо HashSet(однопоточныйСет) могли бы воспользоваться многопоточным Set-ом, или синхронайзд блоком, что бы блокировать доспуп к ресурсу и что бы один поток мог изменять этот самый ресурс или lругой вариант синхронизации.</span>
+<a name="l47"><span class="ln">47   </span></a>        <span class="s1">Runnable runnable = ()-&gt;{ </span><span class="s3">// 10. задача</span>
+<a name="l48"><span class="ln">48   </span></a>            <span class="s1">String threadName = Thread.currentThread().getName()</span><span class="s2">;</span>
+<a name="l49"><span class="ln">49   </span></a>            <span class="s1">System.out.println(threadName + </span><span class="s5">&quot; ожидает разрешение&quot;</span><span class="s1">)</span><span class="s2">;</span>
+<a name="l50"><span class="ln">50   </span></a>            <span class="s0">try </span><span class="s1">{</span>
+<a name="l51"><span class="ln">51   </span></a>                <span class="s1">sem.acquire()</span><span class="s2">; </span><span class="s3">// 15. перед тем как изменить общий ресурс, мы обращаемся к симофору и он отнимает единицу от 13го комментария &quot;..... Semaphore(1, true)&quot;; то есть от ЕДИНИЦЫ, следовательно, отнимает 1-1, получает 0 и все потоки будут заблокированы пока разрешение не станет положительным числом =&gt; 16.</span>
+<a name="l52"><span class="ln">52   </span></a>                <span class="s1">Thread.sleep(</span><span class="s4">3000</span><span class="s1">)</span><span class="s2">;</span>
+<a name="l53"><span class="ln">53   </span></a>                <span class="s1">System.out.println(threadName + </span><span class="s5">&quot; разрешение получено&quot;</span><span class="s1">)</span><span class="s2">;</span>
+<a name="l54"><span class="ln">54   </span></a>                <span class="s1">commonSet.add(threadName)</span><span class="s2">; </span><span class="s3">// 14. как обратиться к общему ресурсу (НЕ потокобезапасному, если бы был потокобезопасный то можно было бы просто обратиться к нему и записать в него), =&gt; 15</span>
+<a name="l55"><span class="ln">55   </span></a>            <span class="s1">} </span><span class="s0">catch </span><span class="s1">(InterruptedException e) {</span>
+<a name="l56"><span class="ln">56   </span></a>                <span class="s1">e.printStackTrace()</span><span class="s2">;</span>
+<a name="l57"><span class="ln">57   </span></a>            <span class="s1">} </span><span class="s0">finally </span><span class="s1">{</span>
+<a name="l58"><span class="ln">58   </span></a>                <span class="s1">System.out.println(threadName + </span><span class="s5">&quot; освобождает разрешение&quot;</span><span class="s1">)</span><span class="s2">;</span>
+<a name="l59"><span class="ln">59   </span></a>                <span class="s1">sem.release()</span><span class="s2">; </span><span class="s3">//17. После того как разрешенный поток, поработал задачу до этой строчки, то к сылке симофора прибовляют еденицу, и следующий поток помет быть добавлен в ресурс.</span>
+<a name="l60"><span class="ln">60   </span></a>            <span class="s1">}</span>
+<a name="l61"><span class="ln">61   </span></a>        <span class="s1">}</span><span class="s2">;</span>
+<a name="l62"><span class="ln">62   </span></a>        <span class="s0">new </span><span class="s1">Thread(runnable).start()</span><span class="s2">; </span><span class="s3">// 16. допустим этот поток забрал разрешение, то остальным потоки не смогут обращаться к ресурсу HashSet.</span>
+<a name="l63"><span class="ln">63   </span></a>        <span class="s0">new </span><span class="s1">Thread(runnable).start()</span><span class="s2">; </span><span class="s3">//11. Три потока, выполняющие одни и те же инструкции, обратиться к HashSet и добавить туда инфо.</span>
+<a name="l64"><span class="ln">64   </span></a>        <span class="s0">new </span><span class="s1">Thread(runnable).start()</span><span class="s2">;</span>
+<a name="l65"><span class="ln">65   </span></a>        <span class="s3">// 18. Смысл такого подхода, что у разрешений есть флаг справедливости, например, первый поток захватил разрешение первым, второй становится в очередь, третий за вторым и т.д., то есть РАЗРЕШИНИЯ будут выдаваться по очереди. А не как попала, по типу синхроныйзд блока.</span>
+<a name="l66"><span class="ln">66   </span></a>    <span class="s1">}</span>
+<a name="l67"><span class="ln">67   </span></a><span class="s1">}</span></pre>
+</body>
+</html>
